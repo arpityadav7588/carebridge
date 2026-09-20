@@ -37,14 +37,16 @@ class IntakePipeline:
         self.llm_adapter = llm_adapter or BioMistralAdapter()
         self.facility_service = facility_service or FacilityService()
 
-    def _detect_lang(self, text: str) -> str:
+    def _detect_lang(self, text: Optional[str]) -> str:
+        if not text or not isinstance(text, str):
+            return "en"
         if re.search(r"[\u0900-\u097F]", text):
             return "hi"
         return "en"
 
     def process(
         self,
-        text: str,
+        text: Optional[str] = "",
         user_lat: Optional[float] = None,
         user_lng: Optional[float] = None,
         facility_type: str = "hospital",
@@ -54,6 +56,7 @@ class IntakePipeline:
         """
         Executes the full pipeline and tracks stage latencies.
         """
+        text = str(text or "").strip()
         pipeline_start = time.perf_counter()
         latencies: dict[str, float] = {}
 
