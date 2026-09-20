@@ -1,0 +1,159 @@
+{
+  "_meta": {
+    "description": "Deterministic red-flag keyword clusters. Regex/blocklist guardrail — NO LLM. TRD §7.",
+    "precedence": "Safety > Scope > Performance. Any match → RED + Call 108.",
+    "version": "1.0.0"
+  },
+  "RED": {
+    "label_en": "EMERGENCY",
+    "label_hi": "आपातकाल",
+    "action": "Call 108 now",
+    "action_hi": "अभी 108 डायल करें",
+    "clusters": {
+      "cardiac_arrest": {
+        "keywords_en": [
+          "heart attack", "cardiac arrest", "chest pain", "chest tightness",
+          "heart stopped", "no pulse", "crushing chest",
+          "seene me dard", "seene mein dard", "dil ka daura", "chhati me dard", "chaati mein dard"
+        ],
+        "keywords_hi": [
+          "दिल का दौरा", "हार्ट अटैक", "सीने में दर्द", "सीने में जकड़न",
+          "दिल बंद", "नब्ज नहीं", "छाती दर्द"
+        ]
+      },
+      "stroke": {
+        "keywords_en": [
+          "stroke", "face drooping", "arm weakness", "speech difficulty",
+          "sudden confusion", "sudden numbness", "loss of consciousness",
+          "lost consciousness", "unconscious", "fainted", "passed out",
+          "not responding", "lost consciousness and won't wake up",
+          "behoshi", "behoshi aa gayi", "bol nahi pa raha", "behosh"
+        ],
+        "keywords_hi": [
+          "लकवा", "पक्षाघात", "चेहरा लटकना", "बोलने में तकलीफ",
+          "बेहोश", "होश खोना", "अचानक कमजोरी", "जवाब नहीं दे रहा"
+        ]
+      },
+      "severe_bleeding": {
+        "keywords_en": [
+          "severe bleeding", "heavy bleeding", "blood not stopping",
+          "coughing blood", "vomiting blood", "blood in urine",
+          "arterial bleeding", "spurting blood",
+          "khoon nahi ruk raha", "khoon ki ulti"
+        ],
+        "keywords_hi": [
+          "ज्यादा खून बह रहा", "खून नहीं रुक रहा", "खून की उल्टी",
+          "खून वाली उल्टी", "पेशाब में खून", "खून खांसना"
+        ]
+      },
+      "breathing": {
+        "keywords_en": [
+          "not breathing", "stopped breathing", "cant breathe",
+          "can't breathe", "difficulty breathing", "choking",
+          "airway blocked", "severe asthma", "blue lips", "cyanosis",
+          "saans nahi aa rahi", "saas nahi aa rahi", "saans lene me takleef",
+          "saans lene mein dikkat", "dam ghut raha"
+        ],
+        "keywords_hi": [
+          "सांस नहीं आ रही", "सांस बंद हो गई", "सांस लेने में तकलीफ",
+          "गला बंद", "दम घुट रहा", "होंठ नीले", "सांस रुक गई"
+        ]
+      },
+      "allergic": {
+        "keywords_en": [
+          "anaphylaxis", "severe allergic reaction", "throat swelling",
+          "tongue swelling", "epipen", "allergic shock"
+        ],
+        "keywords_hi": [
+          "गले में सूजन", "जीभ में सूजन", "एलर्जी का झटका",
+          "गंभीर एलर्जी"
+        ]
+      },
+      "poisoning_overdose": {
+        "keywords_en": [
+          "poisoning", "overdose", "swallowed poison", "drug overdose",
+          "pesticide ingestion", "chemical ingestion", "suicide attempt"
+        ],
+        "keywords_hi": [
+          "ज़हर खाया", "जहर खाया", "ज़हर पिया", "जहर पिया",
+          "ज़हर पी लिया", "जहर पी लिया",
+          "नशे की ओवरडोज", "कीटनाशक पिया",
+          "आत्महत्या की कोशिश", "गोलियां ज़्यादा खा ली", "गोलियां ज्यादा खा ली"
+        ]
+      },
+      "trauma": {
+        "keywords_en": [
+          "accident", "road accident", "hit by car", "fell from height",
+          "broken bone", "head injury", "skull fracture", "spinal injury",
+          "deep wound", "gunshot", "stab wound"
+        ],
+        "keywords_hi": [
+          "दुर्घटना", "सड़क हादसा", "गाड़ी की टक्कर", "ऊंचाई से गिरा",
+          "हड्डी टूटी", "सिर में चोट", "गहरा घाव", "गोली लगी"
+        ]
+      },
+      "burns": {
+        "keywords_en": [
+          "severe burn", "fire burn", "chemical burn", "electrocution",
+          "electric shock", "burned large area"
+        ],
+        "keywords_hi": [
+          "गंभीर जलन", "आग से जला", "रासायनिक जलन", "बिजली का झटका",
+          "बड़े हिस्से में जला"
+        ]
+      },
+      "drowning_asphyxia": {
+        "keywords_en": [
+          "drowning", "near drowning", "hanging", "strangulation"
+        ],
+        "keywords_hi": [
+          "डूब रहा", "पानी में डूबा", "फांसी", "गला दबाया"
+        ]
+      },
+      "obstetric": {
+        "keywords_en": [
+          "delivery complications", "baby not breathing", "cord prolapse",
+          "severe bleeding after delivery", "eclampsia", "fits in pregnancy"
+        ],
+        "keywords_hi": [
+          "डिलीवरी में दिक्कत", "बच्चा सांस नहीं ले रहा",
+          "प्रसव के बाद ज्यादा खून", "गर्भावस्था में दौरे"
+        ]
+      }
+    }
+  },
+  "YELLOW": {
+    "label_en": "HIGH PRIORITY",
+    "label_hi": "उच्च प्राथमिकता",
+    "action": "Seek care within 2 hours",
+    "action_hi": "2 घंटे में इलाज कराएं",
+    "clusters": {
+      "high_fever": {
+        "keywords_en": ["high fever", "fever 103", "fever 104", "fever above 103",
+          "tez bukhar", "tej bukhar"],
+        "keywords_hi": ["तेज बुखार", "बहुत बुखार", "103 बुखार", "तेज बुखार है"]
+      },
+      "severe_pain": {
+        "keywords_en": ["severe pain", "unbearable pain", "worst pain", "10 out of 10 pain"],
+        "keywords_hi": ["असहनीय दर्द", "बहुत तेज दर्द", "बर्दाश्त नहीं"]
+      },
+      "altered_mental": {
+        "keywords_en": ["confused", "disoriented", "not making sense", "hallucinating"],
+        "keywords_hi": ["भ्रमित", "पागलपन", "होश में नहीं", "उल्टी बातें"]
+      },
+      "diabetic": {
+        "keywords_en": ["blood sugar very low", "hypoglycemia", "diabetic emergency",
+          "blood sugar crashing", "shugar bahut kam", "sugar bahut kam",
+          "shugar kam ho gayi", "sugar gir gayi"],
+        "keywords_hi": ["शुगर बहुत कम", "डायबिटीज इमर्जेंसी", "शुगर गिर गई",
+          "शुगर कम हो गई", "ब्लड शुगर बहुत कम"]
+      }
+    }
+  },
+  "GREEN": {
+    "label_en": "NON-URGENT",
+    "label_hi": "सामान्य",
+    "action": "Schedule a clinic visit",
+    "action_hi": "क्लिनिक में अपॉइंटमेंट लें"
+  }
+}

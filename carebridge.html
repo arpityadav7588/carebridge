@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F172A">
+<title>CareBridge — Emergency Healthcare Navigator</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --red:#D32F2F; --red-dark:#991B1B; --amber:#F9A825; --amber-ink:#422006;
+  --green:#2E7D32; --green-bg:#E6F4EA; --bg:#0F172A; --surface:#FFFFFF;
+  --ink:#0F172A; --muted:#475569; --line:#E2E8F0; --radius:16px; --tap:56px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,"Noto Sans Devanagari","Inter",sans-serif;font-size:18px;line-height:1.5}
+body{min-height:100vh;min-height:100dvh;display:flex;justify-content:center;padding:16px;
+  padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+@media (max-width:480px){body{padding:0}.phone{border-radius:0!important;min-height:100dvh!important}}
+.phone{width:100%;max-width:430px;background:var(--surface);border-radius:28px;overflow:hidden;
+  display:flex;flex-direction:column;min-height:min(920px,calc(100vh - 32px));min-height:min(920px,calc(100dvh - 32px));
+  box-shadow:0 30px 80px rgba(0,0,0,.5)}
+header.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;gap:8px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px}
+.pulse-dot{width:12px;height:12px;border-radius:50%;background:var(--red);position:relative;flex:0 0 auto}
+.pulse-dot::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--red);opacity:.6;animation:ring 1.6s infinite}
+@keyframes ring{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.2);opacity:0}}
+.lang-toggle{display:flex;background:#F1F5F9;border-radius:999px;padding:4px;gap:4px}
+.lang-toggle button{border:0;background:transparent;min-height:44px;min-width:56px;border-radius:999px;font-weight:800;font-size:16px;cursor:pointer;color:var(--muted)}
+.lang-toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.loc-chip{display:flex;align-items:center;gap:8px;margin:4px 16px 0;padding:8px 12px;border-radius:12px;background:#F1F5F9;font-size:16px;font-weight:600}
+.loc-chip button{margin-left:auto;border:1px solid var(--line);border-radius:999px;background:#fff;min-height:40px;padding:4px 12px;font-weight:700;cursor:pointer;font-size:16px}
+.degraded{display:none;margin:8px 16px 0;padding:8px 12px;border-radius:12px;background:#FEF3C7;color:#92400E;font-size:16px;font-weight:700}
+.degraded.on{display:block}
+main{flex:1;padding:6px 16px 12px}
+.screen{display:none}.screen.active{display:block;animation:slidefade .26s ease}
+@keyframes slidefade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.screen.active,.pulse-dot::after,.call-now{animation:none!important}}
+h1{font-size:26px;line-height:1.25;margin:14px 0 6px}h2{font-size:22px;margin:12px 0 8px}
+.sub{color:var(--muted);margin:0 0 12px;font-size:17px}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;padding:14px 0 6px}
+.mic{width:168px;height:168px;border-radius:50%;border:0;cursor:pointer;background:var(--red);color:#fff;
+  box-shadow:0 14px 30px rgba(211,47,47,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.mic small{font-size:14px;font-weight:800}
+.mic.listening{background:var(--red-dark);transform:scale(1.04)}
+.wave{display:flex;gap:6px;height:44px;align-items:flex-end;justify-content:center;margin:14px 0 4px;min-height:44px}
+.wave span{width:8px;border-radius:99px;background:#94A3B8;height:10px}
+.listening-wave span{background:var(--red);animation:wv .7s infinite ease-in-out}
+@keyframes wv{0%,100%{height:10px}50%{height:42px}}
+.status{min-height:30px;font-weight:700;text-align:center;color:var(--muted);font-size:17px}
+.status.error{color:var(--red-dark)}
+.heard{display:none;border:2px dashed var(--ink);border-radius:var(--radius);padding:12px;margin:10px 0;font-size:17px}
+.heard.on{display:block}.heard blockquote{margin:6px 0;font-weight:700}
+textarea,input[type=text],input[type=tel]{width:100%;border:2px solid var(--line);border-radius:var(--radius);
+  min-height:var(--tap);padding:14px;font-size:18px;font-family:inherit}
+textarea:focus,input:focus{outline:3px solid #1D4ED8;outline-offset:1px;border-color:#1D4ED8}
+.chips{display:flex;gap:10px;overflow-x:auto;padding:12px 2px}
+.chip{flex:0 0 auto;min-height:var(--tap);padding:12px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:17px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.chip-hint{font-size:16px;color:var(--muted);margin:2px 0 0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:var(--tap);
+  border-radius:var(--radius);border:0;font-size:19px;font-weight:800;cursor:pointer;text-decoration:none;padding:14px}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--ink);color:#fff}.btn-red{background:var(--red);color:#fff}
+.btn-outline{background:#fff;border:2px solid var(--ink);color:var(--ink)}
+.btn:focus-visible,.chip:focus-visible,.mic:focus-visible,a:focus-visible,button:focus-visible{outline:4px solid #1D4ED8;outline-offset:2px}
+.think{display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 10px}
+.shimmer{width:110px;height:110px;border-radius:50%;background:linear-gradient(110deg,#E2E8F0 30%,#fff 50%,#E2E8F0 70%);
+  background-size:200% 100%;animation:sh 1.2s infinite linear;border:4px solid var(--line);display:grid;place-items:center}
+@keyframes sh{to{background-position:-200% 0}}
+.urgency{border-radius:var(--radius);padding:18px;color:#fff;margin:10px 0 14px}
+.urgency .tag{display:inline-flex;align-items:center;gap:8px;font-weight:800;background:rgba(255,255,255,.22);border-radius:999px;padding:6px 14px;font-size:16px}
+.urgency h2{color:inherit;margin:12px 0;font-size:22px}
+.urgency.red{background:var(--red)}.urgency.amber{background:var(--amber);color:#231A00}
+.urgency.amber .tag{background:rgba(0,0,0,.14)}.urgency.green{background:var(--green)}
+.steps{margin:10px 0;padding-left:22px;font-size:17px;font-weight:600}.steps li{margin:6px 0}
+.worsen{font-weight:800;font-size:17px;margin:10px 0}
+.call-now{background:#fff;color:var(--red-dark);font-size:21px;position:relative;margin-top:6px}
+.urgency.amber .call-now{color:var(--amber-ink)}.urgency.green .call-now{color:var(--green)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.top-pick{border:2px solid var(--green);border-radius:var(--radius);padding:12px;margin:12px 0;background:#fff}
+.top-pick strong{font-size:18px}
+.card{border:2px solid var(--line);border-radius:var(--radius);padding:14px;margin:12px 0;background:#fff}
+.card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.card h3{margin:0;font-size:19px}
+.badge{font-size:16px;font-weight:800;border-radius:999px;padding:5px 10px;white-space:nowrap}
+.badge.open{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+.badge.unk{background:#F1F5F9;color:var(--muted);border:1px solid var(--line)}
+.badge.closed{background:#FEE2E2;color:var(--red-dark);border:1px solid var(--red)}
+.badge.src{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+.meta{color:var(--muted);margin:6px 0;font-size:17px}.fact{font-size:17px;margin:4px 0}
+.src-line{font-size:16px;color:var(--muted);margin-top:8px}
+.call{background:#fff;border:2px solid var(--ink);color:var(--ink)}
+.nav{background:var(--ink);color:#fff}
+.tabs{display:flex;gap:8px;margin:8px 0}
+.tabs button{flex:1;min-height:52px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:800;font-size:17px;cursor:pointer}
+.tabs button[aria-selected="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+#map{height:280px;border-radius:var(--radius);border:2px solid var(--line);margin:10px 0}
+.confirm{background:var(--green-bg);border:2px solid var(--green);border-radius:var(--radius);padding:16px}
+.person{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;margin:8px 0}
+.person .row{margin-top:8px}
+.wa{background:#25D366;color:#062b16;border:0}
+.mark-sent{background:#fff;border:2px solid var(--green);color:var(--green)}
+.sent-state{font-weight:800;color:var(--green);font-size:17px}
+.err{border:2px solid var(--red);background:#FEF2F2;border-radius:var(--radius);padding:14px;margin:12px 0;font-size:17px}
+.err strong{color:var(--red-dark)}
+.stickybar{position:sticky;bottom:0;background:#fff;border-top:2px solid var(--line);
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px}
+.stickybar a{flex:1;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:14px;font-weight:800;font-size:19px;text-decoration:none}
+.stickybar .e108{background:var(--red);color:#fff}.stickybar .e112{background:var(--ink);color:#fff}
+.disclaimer{background:#FEF2F2;border-top:3px solid var(--red);padding:10px 16px;font-size:16px;font-weight:600;color:#7F1D1D}
+.debug-only{display:none}.debug .debug-only{display:block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.contact-row{display:flex;gap:8px;margin:8px 0}.contact-row input{flex:1}
+.seed-note{font-size:16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:10px 12px;color:#1E3A8A;margin:8px 0}
+svg.ic{width:26px;height:26px;flex:0 0 auto}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+  <header class="topbar">
+    <div class="brand"><span class="pulse-dot" aria-hidden="true"></span> CareBridge</div>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button id="btn-hi" aria-pressed="true">HI</button>
+      <button id="btn-en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+  <div class="loc-chip" id="loc-chip" role="status" aria-live="polite">
+    <span id="loc-txt">📍 स्थान लिया जा रहा है…</span>
+    <button id="loc-btn">क्षेत्र लिखें</button>
+  </div>
+  <div class="degraded" id="degraded">⚠ सीमित मोड — ऑफ़लाइन नियम चल रहे हैं। 108 पर कॉल करें।</div>
+
+  <main id="main">
+    <section class="screen" id="s0" aria-labelledby="s0-h">
+      <h1 id="s0-h" tabindex="-1">पहले परिवार के नंबर सहेजें</h1>
+      <p class="sub">SOS पर WhatsApp इन्हीं नंबरों पर खुलेगा। 1–3 नंबर, +91 भारतीय मोबाइल।</p>
+      <div id="contact-form"></div>
+      <button class="btn btn-outline" id="add-contact">+ नंबर जोड़ें (अधिकतम 3)</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-primary" id="save-contacts">सहेजें और आगे बढ़ें</button>
+      <p class="sub" id="contact-err" role="alert" style="color:var(--red-dark);font-weight:700"></p>
+    </section>
+
+    <section class="screen active" id="s1" aria-labelledby="s1-h">
+      <h1 id="s1-h" tabindex="-1">अपनी तकलीफ़ बताइए…</h1>
+      <p class="sub">बड़ा माइक दबाकर बोलें — अपने आप रुकेगा। पढ़ना ज़रूरी नहीं।</p>
+      <div class="mic-wrap">
+        <button class="mic" id="mic" aria-pressed="false" aria-label="बोलना शुरू करें / बंद करें">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg>
+          <small id="mic-label">बोलें</small>
+        </button>
+        <div class="wave" id="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="status" id="mic-status" role="status" aria-live="polite"></div>
+      </div>
+      <div class="heard" id="heard"><strong>सुनाई दिया:</strong><blockquote id="heard-txt"></blockquote>
+        <button class="btn btn-outline" id="edit-heard" style="min-height:52px;font-size:17px">बदलें / Edit</button></div>
+            <!-- Judge Demo Presets -->
+      <div class="presets-wrap" style="margin: 12px 0 16px 0; background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 12px; padding: 12px;">
+        <div style="font-size: 13px; font-weight: 800; color: #475569; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between;">
+          <span>⚖️ Demo Presets (Judge Scenarios)</span>
+          <span style="font-size: 11px; background: #E2E8F0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">1-Click Triage</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+          <button type="button" class="btn btn-outline preset-btn" data-preset="red" style="min-height: 48px; padding: 6px 8px; font-size: 13px; font-weight: 700; border: 1.5px solid #EF4444; color: #B91C1C; background: #FEF2F2; text-align: center; border-radius: 8px; line-height: 1.2; cursor: pointer;">
+            🔴 सीने में दर्द<br><span style="font-size: 11px; font-weight: 500; color: #DC2626;">(Heart Attack / RED)</span>
+          </button>
+          <button type="button" class="btn btn-outline preset-btn" data-preset="amber" style="min-height: 48px; padding: 6px 8px; font-size: 13px; font-weight: 700; border: 1.5px solid #F59E0B; color: #B45309; background: #FFFBEB; text-align: center; border-radius: 8px; line-height: 1.2; cursor: pointer;">
+            🟡 तेज़ बुखार<br><span style="font-size: 11px; font-weight: 500; color: #D97706;">(3 Days / YELLOW)</span>
+          </button>
+          <button type="button" class="btn btn-outline preset-btn" data-preset="green" style="min-height: 48px; padding: 6px 8px; font-size: 13px; font-weight: 700; border: 1.5px solid #10B981; color: #047857; background: #ECFDF5; text-align: center; border-radius: 8px; line-height: 1.2; cursor: pointer;">
+            🟢 हल्का सिरदर्द<br><span style="font-size: 11px; font-weight: 500; color: #059669;">(Mild / GREEN)</span>
+          </button>
+        </div>
+      </div>
+      <label for="txt" id="txt-label" style="font-weight:800">लिखकर बताएं</label>
+      <textarea id="txt" rows="2" placeholder="यहाँ लिखें… जैसे सीने में दर्द"></textarea>
+      <p class="chip-hint">नीचे लक्षण चुनें — ये सिर्फ़ संकेत हैं, फ़ैसला सिस्टम करेगा:</p>
+      <div class="chips" role="group" aria-label="लक्षण संकेत">
+        <button class="chip" data-sym="breathing" aria-pressed="false">साँस में तकलीफ़</button>
+        <button class="chip" data-sym="chest" aria-pressed="false">सीने में दर्द</button>
+        <button class="chip" data-sym="injury" aria-pressed="false">चोट / खून</button>
+        <button class="chip" data-sym="fever" aria-pressed="false">बुख़ार / खाँसी</button>
+      </div>
+      <button class="btn btn-primary" id="go">मदद शुरू करें</button>
+      <div class="debug-only" style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:16px">
+        <strong>Debug (?debug=1):</strong>
+        <div class="row" style="margin-top:6px">
+          <button class="btn btn-outline" data-dbg="red">RED</button>
+          <button class="btn btn-outline" data-dbg="amber">YEL</button>
+          <button class="btn btn-outline" data-dbg="green">GRN</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="s2" aria-labelledby="s2-h">
+      <div class="think">
+        <div class="shimmer" aria-hidden="true"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+        <h2 id="s2-h" tabindex="-1">आपकी मदद के लिए जाँच हो रही है…</h2>
+        <p class="sub" id="s2-echo"></p>
+      </div>
+    </section>
+
+    <section class="screen" id="s-clarify" aria-labelledby="sc-h">
+      <h2 id="sc-h" tabindex="-1">थोड़ा और बताइए</h2>
+      <div class="err"><strong>समझ नहीं आया।</strong><p style="margin:6px 0">क्या तकलीफ़ है — साँस, सीना, चोट, या बुख़ार? बोलें या लिखें।</p></div>
+      <button class="btn btn-primary" id="back-intake">वापस बोलें / लिखें</button>
+    </section>
+
+    <section class="screen" id="s3" aria-labelledby="s3-h">
+      <div class="urgency red" id="urg-box">
+        <span class="tag" id="urg-tag"></span>
+        <h2 id="s3-h" tabindex="-1"></h2>
+        <ol class="steps" id="urg-steps"></ol>
+        <p class="worsen" id="urg-worsen"></p>
+        <div class="row">
+          <button class="btn btn-outline" style="background:#fff" id="hear">▶ सुनें</button>
+          <a class="btn call-now" href="tel:108">108 कॉल</a>
+        </div>
+      </div>
+      <div class="top-pick" id="top-pick"></div>
+      <button class="btn btn-primary" id="to-list">पास के अस्पताल देखें</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-outline" id="re-speak">वापस बोलें</button>
+    </section>
+
+    <section class="screen" id="s4" aria-labelledby="s4-h">
+      <h2 id="s4-h" tabindex="-1">पास के अस्पताल</h2>
+      <div class="seed-note" id="order-note"></div>
+      <div class="tabs" role="tablist" aria-label="सूची या नक्शा">
+        <button role="tab" aria-selected="true" id="tab-list">सूची</button>
+        <button role="tab" aria-selected="false" id="tab-map">नक्शा</button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="श्रेणी">
+        <button aria-selected="true" data-cat="hospital">अस्पताल</button>
+        <button aria-selected="false" data-cat="pharmacy">फ़ार्मेसी</button>
+        <button aria-selected="false" data-cat="blood">ब्लड बैंक</button>
+      </div>
+      <div id="map" hidden></div>
+      <div id="fac-list"></div>
+      <button class="btn btn-red" id="to-sos" style="margin-top:6px">SOS — परिवार को सूचित करें</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-outline" id="back-s3">मार्गदर्शन वापस</button>
+    </section>
+
+    <section class="screen" id="s5" aria-labelledby="s5-h">
+      <h2 id="s5-h" tabindex="-1">परिवार को WhatsApp पर भेजें</h2>
+      <p class="sub">यह पेज खुद संदेश <strong>नहीं</strong> भेजता। हर नंबर पर खुद WhatsApp खोलकर भेजें, फिर निशान लगाएं।</p>
+      <div class="confirm"><div id="sos-list"></div></div>
+      <div class="card" id="nav-card"></div>
+      <button class="btn btn-outline" id="new-emg">नई emergency</button>
+    </section>
+  </main>
+
+  <footer>
+    <div class="disclaimer" role="note">⚠ यह निदान नहीं करता। Emergency में 108 / 112 पर कॉल करें।</div>
+    <div class="stickybar" aria-label="आपातकालीन कॉल">
+      <a class="e108" href="tel:108"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16v4a2 2 0 0 1-2 2 19 19 0 0 1-8-3 19 19 0 0 1-6-6 19 19 0 0 1-3-8A2 2 0 0 1 5 3h4a2 2 0 0 1 2 2v3a2 2 0 0 1-.6 1.4L8.5 11.3a16 16 0 0 0 6 6l1.9-1.9A2 2 0 0 1 18 16z"/></svg> 108</a>
+      <a class="e112" href="tel:112">112 कॉल</a>
+    </div>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+"use strict";
+var DEBUG=new URLSearchParams(location.search).has("debug");
+if(DEBUG)document.getElementById("app").classList.add("debug");
+var LANG=localStorage.getItem("cb_lang")||((navigator.language||"en").toLowerCase().indexOf("hi")===0?"hi":"en");
+var GPS={lat:22.7196,lng:75.8577,acc:25,status:"on",manual:"Indore Central"};
+var URG="red",hints={},transcript="",picked=null,SEV={green:1,amber:2,red:3};
+var SEEDS = [
+ {
+  "id": "indore_my_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "महाराजा यशवंतराव (एम.वाई.) अस्पताल एवं ट्रॉमा सेंटर",
+   "en": "Maharaja Yashwantrao (MY) Hospital & Trauma Centre"
+  },
+  "addr": {
+   "hi": "MY Hospital Road, Sanyogitaganj, Indore, MP 452001",
+   "en": "MY Hospital Road, Sanyogitaganj, Indore, MP 452001"
+  },
+  "lat": 22.7153,
+  "lng": 75.8753,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "108",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_bombay_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "बॉम्बे हॉस्पिटल इंदौर",
+   "en": "Bombay Hospital Indore"
+  },
+  "addr": {
+   "hi": "Ring Road, IDA Scheme No. 94/95, Eastern Ring Road, Indore, MP 452010",
+   "en": "Ring Road, IDA Scheme No. 94/95, Eastern Ring Road, Indore, MP 452010"
+  },
+  "lat": 22.7533,
+  "lng": 75.8937,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4771100",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_medanta_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "मेदांता सुपर स्पेशलिटी अस्पताल इंदौर",
+   "en": "Medanta Super Speciality Hospital Indore"
+  },
+  "addr": {
+   "hi": "Plot No. 8, PU-4, Commercial Scheme 54, Vijay Nagar, Indore, MP 452010",
+   "en": "Plot No. 8, PU-4, Commercial Scheme 54, Vijay Nagar, Indore, MP 452010"
+  },
+  "lat": 22.7539,
+  "lng": 75.8872,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4747108",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_chl_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "केयर सीएचएल अस्पताल",
+   "en": "CARE CHL Hospitals"
+  },
+  "addr": {
+   "hi": "A.B. Road, Near LIG Square, Indore, MP 452008",
+   "en": "A.B. Road, Near LIG Square, Indore, MP 452008"
+  },
+  "lat": 22.7348,
+  "lng": 75.8864,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4774108",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_choithram_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "चोइथराम अस्पताल एवं अनुसंधान केंद्र",
+   "en": "Choithram Hospital & Research Centre"
+  },
+  "addr": {
+   "hi": "14 Manik Bagh Road, Indore, MP 452014",
+   "en": "14 Manik Bagh Road, Indore, MP 452014"
+  },
+  "lat": 22.6958,
+  "lng": 75.8459,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-2472018",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_apollo_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "अपोलो हॉस्पिटल्स इंदौर",
+   "en": "Apollo Hospitals Indore"
+  },
+  "addr": {
+   "hi": "Sector D, Scheme No 74C, Vijay Nagar, Indore, MP 452010",
+   "en": "Sector D, Scheme No 74C, Vijay Nagar, Indore, MP 452010"
+  },
+  "lat": 22.7601,
+  "lng": 75.8942,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "1066",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_saims_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "श्री अरबिंदो आयुर्विज्ञान संस्थान (सैम्स)",
+   "en": "Sri Aurobindo Institute of Medical Sciences (SAIMS)"
+  },
+  "addr": {
+   "hi": "Indore-Ujjain State Highway, Sanwer Road, Bhawrasla, Indore, MP 453555",
+   "en": "Indore-Ujjain State Highway, Sanwer Road, Bhawrasla, Indore, MP 453555"
+  },
+  "lat": 22.7932,
+  "lng": 75.8427,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4231108",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_apple_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "एप्पल हॉस्पिटल",
+   "en": "Apple Hospital"
+  },
+  "addr": {
+   "hi": "Bhicholi Mardana Road / Transport Nagar, Bhawarkua, Indore, MP 452001",
+   "en": "Bhicholi Mardana Road / Transport Nagar, Bhawarkua, Indore, MP 452001"
+  },
+  "lat": 22.6917,
+  "lng": 75.8671,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4040400",
+  "has_icu": true,
+  "has_blood_bank": false
+ },
+ {
+  "id": "indore_greater_kailash",
+  "cat": "hospital",
+  "name": {
+   "hi": "ग्रेटर कैलाश अस्पताल",
+   "en": "Greater Kailash Hospital"
+  },
+  "addr": {
+   "hi": "11/2, Old Palasia, Indore, MP 452018",
+   "en": "11/2, Old Palasia, Indore, MP 452018"
+  },
+  "lat": 22.7235,
+  "lng": 75.8856,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4033300",
+  "has_icu": true,
+  "has_blood_bank": false
+ },
+ {
+  "id": "indore_vishesh_jupiter",
+  "cat": "hospital",
+  "name": {
+   "hi": "विशेष ज्यूपिटर अस्पताल",
+   "en": "Vishesh Jupiter Hospital"
+  },
+  "addr": {
+   "hi": "Ring Road, Near Teen Imli Square, Indore, MP 452020",
+   "en": "Ring Road, Near Teen Imli Square, Indore, MP 452020"
+  },
+  "lat": 22.6974,
+  "lng": 75.8924,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4718108",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_shalby_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "शाल्बी स्पेशलिटी अस्पताल",
+   "en": "Shalby Speciality Hospital"
+  },
+  "addr": {
+   "hi": "R.S. Bhandari Marg, Janjeerwala Square, New Palasia, Indore, MP 452001",
+   "en": "R.S. Bhandari Marg, Janjeerwala Square, New Palasia, Indore, MP 452001"
+  },
+  "lat": 22.7268,
+  "lng": 75.8778,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-6677108",
+  "has_icu": true,
+  "has_blood_bank": false
+ },
+ {
+  "id": "indore_district_hospital",
+  "cat": "hospital",
+  "name": {
+   "hi": "शासकीय जिला चिकित्सालय धार रोड",
+   "en": "Government District Hospital Dhar Road"
+  },
+  "addr": {
+   "hi": "Dhar Road, Near Sirpur Lake, Indore, MP 452002",
+   "en": "Dhar Road, Near Sirpur Lake, Indore, MP 452002"
+  },
+  "lat": 22.7092,
+  "lng": 75.8236,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "108",
+  "has_icu": true,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_redcross_blood",
+  "cat": "blood",
+  "name": {
+   "hi": "रेड क्रॉस ब्लड बैंक (एम.वाई.एच परिसर)",
+   "en": "Red Cross Blood Bank (MYH Campus)"
+  },
+  "addr": {
+   "hi": "एमवाय अस्पताल परिसर, इंदौर",
+   "en": "MY Hospital Campus, Indore"
+  },
+  "lat": 22.7155,
+  "lng": 75.8755,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-2527301",
+  "has_icu": false,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_charitable_blood",
+  "cat": "blood",
+  "name": {
+   "hi": "इंदौर चैरिटेबल ट्रस्ट ब्लड बैंक",
+   "en": "Indore Charitable Trust Blood Bank"
+  },
+  "addr": {
+   "hi": "पलासिया, इंदौर",
+   "en": "Palasia, Indore"
+  },
+  "lat": 22.7235,
+  "lng": 75.8856,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-2565656",
+  "has_icu": false,
+  "has_blood_bank": true
+ },
+ {
+  "id": "indore_apollo_pharmacy",
+  "cat": "pharmacy",
+  "name": {
+   "hi": "अपोलो 24x7 फ़ार्मेसी (विजय नगर)",
+   "en": "Apollo 24x7 Pharmacy (Vijay Nagar)"
+  },
+  "addr": {
+   "hi": "विजय नगर चौराहा, इंदौर",
+   "en": "Vijay Nagar Square, Indore"
+  },
+  "lat": 22.7539,
+  "lng": 75.8872,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4000108",
+  "has_icu": false,
+  "has_blood_bank": false
+ },
+ {
+  "id": "indore_medplus_pharmacy",
+  "cat": "pharmacy",
+  "name": {
+   "hi": "मेडप्लस 24x7 फ़ार्मेसी (पलासिया)",
+   "en": "MedPlus 24x7 Pharmacy (Palasia)"
+  },
+  "addr": {
+   "hi": "ओल्ड पलासिया, इंदौर",
+   "en": "Old Palasia, Indore"
+  },
+  "lat": 22.7245,
+  "lng": 75.883,
+  "src": "team",
+  "hours": "open_24h",
+  "phone": "+91-731-4000109",
+  "has_icu": false,
+  "has_blood_bank": false
+ }
+];
+var STR={
+ hi:{intake_h:"अपनी तकलीफ़ बताइए…",go:"मदद शुरू करें",worsen:"अगर हालत बिगड़े तो तुरंत 108 / 112 पर कॉल करें।",
+  red_tag:"तुरंत — RED",red_h:"यह emergency लग रही है। Emergency / Casualty तुरंत जाएं या 108 पर कॉल करें।",
+  red_steps:["व्यक्ति को हिलाएं नहीं, शांत रखें।","साँस चल रही है या नहीं देखें।","108 पर कॉल करें और लोकेशन बताएं।"],
+  amber_tag:"1–2 घंटे में — YELLOW",amber_h:"जल्द दिखाएंगे तो बेहतर रहेगा। 1–2 घंटे में अस्पताल जाएं।",
+  amber_steps:["चोट पर साफ कपड़ा दबाएं।","बुख़ार में पानी पिलाएं।","पास के अस्पताल जाएं।"],
+  green_tag:"गैर-urgent — GREEN",green_h:"घबराएं नहीं। फ़ार्मेसी या डॉक्टर से सलाह ले सकते हैं।",
+  green_steps:["आराम करें, पानी पिएं।","बुख़ार 2 दिन से ज़्यादा रहे तो डॉक्टर को दिखाएं।"]},
+ en:{intake_h:"Describe the emergency…",go:"Get help now",worsen:"If it gets worse, call 108 / 112 immediately.",
+  red_tag:"IMMEDIATE — RED",red_h:"This looks like an emergency. Go to Emergency / Casualty now or call 108.",
+  red_steps:["Keep the person still and calm.","Check if they are breathing.","Call 108 and share location."],
+  amber_tag:"IN 1–2 HOURS — YELLOW",amber_h:"Better to be seen soon. Visit a hospital within 1–2 hours.",
+  amber_steps:["Press a clean cloth on wounds.","Give water for fever.","Visit a nearby hospital."],
+  green_tag:"NON-URGENT — GREEN",green_h:"No need to panic. A pharmacy or doctor visit is fine.",
+  green_steps:["Rest and drink water.","See a doctor if fever lasts over 2 days."]}
+};
+function t(k){return STR[LANG][k];}
+function show(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");s.setAttribute("aria-hidden","true");});
+ var el=document.getElementById(id);el.classList.add("active");el.removeAttribute("aria-hidden");
+ var h=el.querySelector("h1,h2");if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}window.scrollTo(0,0);}
+function degraded(on,msg){var d=document.getElementById("degraded");d.classList.toggle("on",!!on);if(msg)d.textContent=msg;}
+window.addEventListener("offline",function(){degraded(true);});
+function setLang(l){LANG=l;localStorage.setItem("cb_lang",l);document.documentElement.lang=l;
+ document.getElementById("btn-hi").setAttribute("aria-pressed",l==="hi");
+ document.getElementById("btn-en").setAttribute("aria-pressed",l==="en");
+ document.getElementById("s1-h").textContent=t("intake_h");
+ document.getElementById("go").textContent=t("go");
+ document.getElementById("txt").placeholder=l==="hi"?"यहाँ लिखें… जैसे सीने में दर्द":"Type here… e.g. chest pain";
+ document.getElementById("txt-label").textContent=l==="hi"?"लिखकर बताएं":"Describe in words";
+ document.getElementById("urg-worsen").textContent=t("worsen");
+ if(URG)setUrgency(URG);}
+document.getElementById("btn-hi").onclick=function(){setLang("hi");};
+document.getElementById("btn-en").onclick=function(){setLang("en");};
+/* Location */
+function locText(){var el=document.getElementById("loc-txt");
+ if(GPS.lat!=null)el.textContent=(LANG==="hi"?"📍 लोकेशन चालू, ±":"📍 Location on, ±")+(GPS.acc||"?")+" m";
+ else if(GPS.status==="denied")el.textContent=LANG==="hi"?"📍 लोकेशन बंद — क्षेत्र लिखें":"📍 Location off — enter area";
+ else if(GPS.status==="timeout")el.textContent=LANG==="hi"?"📍 लोकेशन timeout — क्षेत्र लिखें":"📍 Location timeout — enter area";
+ else el.textContent=LANG==="hi"?"📍 स्थान लिया जा रहा है…":"📍 Getting location…";}
+function askLoc(){locText();
+ if(!navigator.geolocation){GPS.status="denied";locText();return;}
+ try{navigator.geolocation.getCurrentPosition(function(p){GPS.lat=p.coords.latitude;GPS.lng=p.coords.longitude;
+   GPS.acc=Math.round(p.coords.accuracy||0);GPS.status="on";locText();if(picked)renderFacilities();},
+  function(e){GPS.status=(e&&e.code===1)?"denied":"timeout";locText();},
+  {enableHighAccuracy:true,timeout:10000,maximumAge:60000});}catch(e){GPS.status="denied";locText();}}
+document.getElementById("loc-btn").onclick=function(){
+ var a=prompt(LANG==="hi"?"क्षेत्र / पिनकोड लिखें (जैसे विजय नगर 452010)":"Enter area / pincode (e.g. Vijay Nagar 452010)",GPS.manual||"");
+ if(a!==null){GPS.manual=a;if(GPS.lat==null)GPS.status="denied";locText();}};
+/* Contacts */
+function getContacts(){try{return JSON.parse(localStorage.getItem("cb_contacts")||'[{"name":"परिवार (Demo)","phone":"+919826012345"}]');}catch(e){return[{name:"परिवार (Demo)",phone:"+919826012345"}];}}
+function contactForm(){var c=getContacts();var w=document.getElementById("contact-form");w.innerHTML="";
+ if(!c.length)c=[{name:"",phone:""}];
+ c.slice(0,3).forEach(function(x,i){var d=document.createElement("div");d.className="contact-row";
+  d.innerHTML='<input type="text" data-n placeholder="नाम / Name" value="'+(x.name||"").replace(/"/g,"")+'">'+
+   '<input type="tel" data-p placeholder="+91…" value="'+(x.phone||"").replace(/"/g,"")+'">';w.appendChild(d);});}
+document.getElementById("add-contact").onclick=function(){var c=getContacts();if(c.length>=3)return;
+ var w=document.getElementById("contact-form");var d=document.createElement("div");d.className="contact-row";
+ d.innerHTML='<input type="text" data-n placeholder="नाम / Name"><input type="tel" data-p placeholder="+91…">';w.appendChild(d);};
+function normPhone(p){p=(p||"").replace(/[\s-]/g,"");if(/^[6-9]\d{9}$/.test(p))p="+91"+p;return p;}
+document.getElementById("save-contacts").onclick=function(){
+ var rows=document.querySelectorAll("#contact-form .contact-row");var out=[],err="";
+ rows.forEach(function(r){var n=r.querySelector("[data-n]").value.trim(),p=normPhone(r.querySelector("[data-p]").value.trim());
+  if(n||r.querySelector("[data-p]").value.trim()){if(!/^\+91[6-9]\d{9}$/.test(p))err="नंबर +91 से शुरू 10 अंक का हो";
+   else out.push({name:n||"परिवार",phone:p});}});
+ if(err){document.getElementById("contact-err").textContent=err;return;}
+ if(!out.length){document.getElementById("contact-err").textContent="कम से कम 1 नंबर ज़रूरी है";return;}
+ localStorage.setItem("cb_contacts",JSON.stringify(out.slice(0,3)));show("s1");};
+/* Mic : Web Speech API, tap toggle */
+var rec=null,isListening=false,submitting=false;
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var micBtn=document.getElementById("mic"),wave=document.getElementById("wave"),mst=document.getElementById("mic-status");
+function micUI(on){isListening=on;micBtn.classList.toggle("listening",on);wave.classList.toggle("listening-wave",on);
+ micBtn.setAttribute("aria-pressed",on);document.getElementById("mic-label").textContent=on?(LANG==="hi"?"रोकें":"Stop"):(LANG==="hi"?"बोलें":"Speak");}
+function heardUI(txt){transcript=txt;document.getElementById("heard").classList.add("on");
+ document.getElementById("heard-txt").textContent="“"+txt+"”";}
+function micToggle(){
+ if(isListening){try{rec&&rec.stop();}catch(e){}micUI(false);return;}
+ if(!SR){mst.classList.add("error");mst.textContent=LANG==="hi"?"माइक समर्थित नहीं — लिखकर बताएं":"Mic not supported — please type";return;}
+ try{rec=new SR();}catch(e){mst.classList.add("error");mst.textContent=LANG==="hi"?"माइक विफल — फिर कोशिश करें या लिखें":"Mic failed — retry or type";return;}
+ rec.lang=LANG==="hi"?"hi-IN":"en-IN";rec.interimResults=true;rec.maxAlternatives=1;
+ var finalTxt="";
+ rec.onresult=function(e){var s="";for(var i=0;i<e.results.length;i++){s+=e.results[i][0].transcript;}
+  heardUI(s);if(e.results[e.results.length-1].isFinal)finalTxt=s;};
+ rec.onerror=function(){micUI(false);mst.classList.add("error");
+  mst.textContent=LANG==="hi"?"माइक विफल — फिर कोशिश करें या लिखें":"Mic failed — retry or type";};
+ rec.onend=function(){micUI(false);if(finalTxt){var box=document.getElementById("txt");if(!box.value.trim())box.value=finalTxt;}};
+ try{rec.start();micUI(true);mst.classList.remove("error");mst.textContent=LANG==="hi"?"सुन रहे हैं… अपने आप रुकेगा":"Listening… stops automatically";}catch(e){}}
+micBtn.addEventListener("click",micToggle);
+document.getElementById("edit-heard").onclick=function(){document.getElementById("txt").focus();};
+var PRESET_TEXTS = {
+  red: { hi: "सीने में बहुत तेज़ दर्द है और साँस नहीं आ रही", en: "Severe chest pain radiating to left arm, difficulty breathing" },
+  amber: { hi: "तेज़ बुखार है 3 दिन से और बहुत कमज़ोरी लग रही है", en: "High fever for 3 days with shivering and weakness" },
+  green: { hi: "सुबह से हल्का सिरदर्द है और थकान महसूस हो रही है", en: "Mild headache since morning and slight tiredness" }
+ };
+ document.querySelectorAll(".preset-btn").forEach(function(b){
+  b.addEventListener("click", function(){
+   var pr = b.dataset.preset;
+   var txt = (PRESET_TEXTS[pr] && PRESET_TEXTS[pr][LANG]) || PRESET_TEXTS[pr].hi;
+   var txtEl = document.getElementById("txt");
+   txtEl.value = txt;
+   txtEl.dispatchEvent(new Event("input"));
+   document.getElementById("go").click();
+  });
+ });
+ document.querySelectorAll(".chip").forEach(function(c){c.addEventListener("click",function(){
+ var s=c.dataset.sym;if(hints[s]){delete hints[s];c.setAttribute("aria-pressed","false");}
+ else{hints[s]=true;c.setAttribute("aria-pressed","true");}});});
+function infer(txt){txt=(txt||"").toLowerCase();
+ if(/साँस|सास|सीने|छाती|दर्द|breath|chest|pain|बेहोश/.test(txt))return "red";
+ if(/चोट|खून|खून|injury|blood|तेज.*बुखार|high.*fever/.test(txt))return "amber";
+ if(/बुखार|खाँसी|fever|cough|cold/.test(txt))return "green";return null;}
+var HINTSEV={breathing:"red",chest:"red",injury:"amber",fever:"green"};
+function floorUrg(txt){var best=null,b=0;
+ Object.keys(hints).forEach(function(h){var u=HINTSEV[h];if(SEV[u]>b){b=SEV[u];best=u;}});
+ var inf=infer(txt);if(inf&&SEV[inf]>b){b=SEV[inf];best=inf;}return best;}
+function assessPayload(){return{text:document.getElementById("txt").value.trim()||transcript,
+ hints:Object.keys(hints),lang:LANG,coords:GPS.lat!=null?{lat:GPS.lat,lng:GPS.lng,acc:GPS.acc}:null};}
+function withTimeout(ms){var c=new AbortController();var id=setTimeout(function(){c.abort();},ms);return{signal:c.signal,done:function(){clearTimeout(id);}};}
+document.getElementById("go").onclick=function(){
+ if(submitting)return;
+ var p=assessPayload();
+ if(!p.text&&!p.hints.length){show("s-clarify");return;}
+ submitting=true;document.getElementById("s2-echo").textContent=p.text?("“"+p.text+"”"):"";
+ show("s2");
+ var floor=floorUrg(p.text);
+ var to=withTimeout(8000);
+ fetch("/api/assess",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p),signal:to.signal})
+ .then(function(r){to.done();if(!r.ok)throw 0;return r.json();})
+ .then(function(j){var u=(j&&j.urgency)||floor||"green";
+  if(floor&&SEV[floor]>SEV[u])u=floor; // rule floor: urgency can only go up
+  finishTriage(u,false);})
+ .catch(function(){to.done();degraded(true,LANG==="hi"?"⚠ सीमित मोड — ऑफ़लाइन नियम चल रहे हैं। 108 पर कॉल करें।":"⚠ Degraded mode — offline rules. Call 108.");finishTriage(floor||"green",true);});};
+function finishTriage(u,deg){submitting=false;setTimeout(function(){setUrgency(u);show("s3");},deg?600:400);}
+document.getElementById("back-intake").onclick=function(){show("s1");};
+document.querySelectorAll("[data-dbg]").forEach(function(b){b.onclick=function(){setUrgency(b.dataset.dbg);show("s3");};});
+function setUrgency(u){URG=u;var box=document.getElementById("urg-box");box.className="urgency "+u;
+ var tag=document.getElementById("urg-tag"),h=document.getElementById("s3-h"),ol=document.getElementById("urg-steps");
+ var steps=t(u+"_steps");
+ if(u==="red"){tag.textContent="🔴 "+t("red_tag");h.textContent=t("red_h");}
+ else if(u==="amber"){tag.textContent="🟡 "+t("amber_tag");h.textContent=t("amber_h");}
+ else{tag.textContent="🟢 "+t("green_tag");h.textContent=t("green_h");}
+ ol.innerHTML="";steps.forEach(function(s){var li=document.createElement("li");li.textContent=s;ol.appendChild(li);});
+ document.getElementById("urg-worsen").textContent=t("worsen");
+ picked=nearestHospital();renderTopPick();}
+function haversine(a,b,c,d){function r(x){return x*Math.PI/180;}var R=6371,dLa=r(c-a),dLo=r(d-b);
+ var h=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLo/2)*Math.sin(dLo/2);return 2*R*Math.asin(Math.sqrt(h));}
+function distStr(f){if(GPS.lat==null)return LANG==="hi"?"दूरी अज्ञात — लोकेशन चालू करें":"distance unknown — turn on location";
+ return haversine(GPS.lat,GPS.lng,f.lat,f.lng).toFixed(1)+" km";}
+function nearestHospital(){var hs=SEEDS.filter(function(f){return f.cat==="hospital"&&f.hours!=="closed";});
+ if(GPS.lat==null)return hs[0];
+ var best=hs[0],bd=1e9;hs.forEach(function(f){var d=haversine(GPS.lat,GPS.lng,f.lat,f.lng);if(d<bd){bd=d;best=f;}});return best;}
+function renderTopPick(){var el=document.getElementById("top-pick");if(!picked){el.innerHTML="";return;}
+ var n=picked.name[LANG];
+ el.innerHTML="<strong>🏥 "+n+" — "+distStr(picked)+"</strong><div style='height:8px'></div>"+
+ "<div class='row'><a class='btn call' href='tel:"+picked.phone+"'>📞 Call</a>"+
+ "<a class='btn nav' target='_blank' rel='noopener' href='https://www.google.com/maps/dir/?api=1&destination="+picked.lat+","+picked.lng+"'>Navigate</a></div>";
+ el.querySelector(".nav").onclick=function(){picked.nav=true;};}
+document.getElementById("to-list").onclick=function(){renderFacilities();show("s4");};
+document.getElementById("re-speak").onclick=function(){show("s1");};
+document.getElementById("hear").onclick=function(){ // user tap -> TTS allowed
+ try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(
+  document.getElementById("s3-h").textContent+". "+t(URG+"_steps").join(" ")+". "+t("worsen"));
+  u.lang=LANG==="hi"?"hi-IN":"en-IN";u.rate=.95;speechSynthesis.speak(u);}catch(e){}};
+/* Facilities */
+var curCat="hospital",map=null,markers=[];
+function srcBadge(f){return f.src==="team"
+ ?"<span class='badge src'>✓ टीम-सत्यापित</span>"
+ :"<span class='badge unk'>OSM (अपुष्ट)</span>";}
+function hoursBadge(f){
+ if(f.hours==="open_24h")return "<span class='badge' style='background:#DCFCE7;color:#166534;border:1px solid #86EFAC'>✓ "+(LANG==="hi"?"24 घंटे खुला":"Open 24/7")+"</span>";
+ if(f.hours==="closed")return "<span class='badge closed'>"+(LANG==="hi"?"बंद — कॉल कर पुष्टि करें":"Closed — call to confirm")+"</span>";
+ return "<span class='badge unk'>"+(LANG==="hi"?"समय अज्ञात — कॉल कर पुष्टि करें":"Hours unconfirmed")+"</span>";}
+function renderFacilities(){
+ var list=SEEDS.filter(function(f){return f.cat===curCat;});
+ var sorted=list.slice().sort(function(a,b){
+  if((a.hours==="closed")!==(b.hours==="closed"))return a.hours==="closed"?1:-1;
+  if(GPS.lat==null)return 0;return haversine(GPS.lat,GPS.lng,a.lat,a.lng)-haversine(GPS.lat,GPS.lng,b.lat,b.lng);});
+ document.getElementById("order-note").textContent=LANG==="hi"
+  ?"नज़दीक → दूर के क्रम में। बेड/ICU की जानकारी नहीं है — कॉल कर पुष्टि करें।"
+  :"Sorted nearest first. No bed/ICU data — call to confirm.";
+ var w=document.getElementById("fac-list");w.innerHTML="";
+ if(!sorted.length){w.innerHTML="<div class='err'><strong>आस-पास कुछ नहीं मिला।</strong><p>108 / 112 पर कॉल करें या टेलीमेडिसिन लें।</p></div>";return;}
+ sorted.forEach(function(f){
+  var d=document.createElement("div");d.className="card";
+  d.innerHTML="<div class='card-top'><h3>"+f.name[LANG]+"</h3>"+hoursBadge(f)+"</div>"+
+   "<div class='meta'>"+f.addr[LANG]+" &nbsp; 📍 "+distStr(f)+"</div>"+
+   "<div class='fact'>"+(f.has_icu?(LANG==='hi'?"✓ ICU व आपातकालीन सेवा उपलब्ध":"✓ ICU & Emergency Available"):(LANG==='hi'?"ICU/बेड: जानकारी नहीं — कॉल कर पूछें":"ICU: Unconfirmed — call to verify"))+"</div>"+
+   "<div class='row'><a class='btn call' href='tel:"+f.phone+"'>📞 Call</a>"+
+   "<a class='btn nav' target='_blank' rel='noopener' href='https://www.google.com/maps/dir/?api=1&destination="+f.lat+","+f.lng+"'>Navigate</a></div>"+
+   "<div class='src-line'>स्रोत: "+(f.src==="team"?"टीम-सूची (डेमो बीज)":"OpenStreetMap (अपुष्ट)")+" · फोन डायरेक्टरी से, पुष्टि नहीं</div>";
+  d.querySelector(".nav").onclick=function(){picked=f;};
+  w.appendChild(d);});
+ if(!document.getElementById("map").hidden)drawMap(sorted);}
+document.querySelectorAll("[data-cat]").forEach(function(b){b.onclick=function(){
+ document.querySelectorAll("[data-cat]").forEach(function(x){x.setAttribute("aria-selected","false");});
+ b.setAttribute("aria-selected","true");curCat=b.dataset.cat;renderFacilities();};});
+document.getElementById("tab-list").onclick=function(){document.getElementById("tab-list").setAttribute("aria-selected","true");
+ document.getElementById("tab-map").setAttribute("aria-selected","false");document.getElementById("map").hidden=true;};
+document.getElementById("tab-map").onclick=function(){document.getElementById("tab-map").setAttribute("aria-selected","true");
+ document.getElementById("tab-list").setAttribute("aria-selected","false");document.getElementById("map").hidden=false;renderFacilities();};
+function drawMap(list){try{
+ if(!window.L){degraded(true);return;}
+ if(!map){map=L.map("map");L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);}
+ markers.forEach(function(m){map.removeLayer(m);});markers=[];
+ if(GPS.lat!=null){markers.push(L.marker([GPS.lat,GPS.lng]).addTo(map).bindPopup("आप"));map.setView([GPS.lat,GPS.lng],14);}
+ list.forEach(function(f){markers.push(L.marker([f.lat,f.lng]).addTo(map).bindPopup(f.name[LANG]));});
+ if(GPS.lat==null&&list.length)map.setView([list[0].lat,list[0].lng],14);
+ setTimeout(function(){map.invalidateSize();},200);}catch(e){}}
+document.getElementById("back-s3").onclick=function(){show("s3");};
+/* SOS : honest, per-contact links */
+document.getElementById("to-sos").onclick=function(){renderSOS();show("s5");};
+function sosMsg(f){var loc=GPS.lat!=null?("https://maps.google.com/?q="+GPS.lat+","+GPS.lng):("इलाका: "+(GPS.manual||"अज्ञात"));
+ return "🚨 EMERGENCY ("+t(URG+"_tag")+"). "+(f?f.name[LANG]:"")+" — "+loc;}
+function renderSOS(){var cs=getContacts();var w=document.getElementById("sos-list");w.innerHTML="";
+ cs.forEach(function(c,i){var st=localStorage.getItem("cb_sent_"+i);
+  var d=document.createElement("div");d.className="person";
+  d.innerHTML="<strong>"+c.name+"</strong> · "+c.phone+
+   (st?"<div class='sent-state'>✓ भेजा गया "+st+"</div>":
+   "<div class='row'><a class='btn wa' target='_blank' rel='noopener' href='https://wa.me/"+c.phone.replace("+","")+"?text="+encodeURIComponent(sosMsg(picked))+"'>WhatsApp खोलकर भेजें</a>"+
+   "<button class='btn mark-sent'>भेज दिया ✓</button></div>");
+  var wa=d.querySelector(".wa");if(wa)wa.onclick=function(){localStorage.setItem("cb_open_"+i,new Date().toLocaleTimeString());};
+  var ms=d.querySelector(".mark-sent");if(ms)ms.onclick=function(){
+   var tm=new Date().toLocaleTimeString();localStorage.setItem("cb_sent_"+i,tm);renderSOS();};
+  w.appendChild(d);});
+ var n=document.getElementById("nav-card");
+ n.innerHTML="<strong>🧭 "+(picked?picked.name[LANG]:"")+(GPS.lat!=null&&picked?" ("+haversine(GPS.lat,GPS.lng,picked.lat,picked.lng).toFixed(1)+" km)":"")+"</strong><div style='height:8px'></div>"+
+ (picked?"<a class='btn btn-primary' target='_blank' rel='noopener' href='https://www.google.com/maps/dir/?api=1&destination="+picked.lat+","+picked.lng+"'>Maps में खोलें</a>":"");}
+document.getElementById("new-emg").onclick=function(){transcript="";document.getElementById("txt").value="";document.getElementById("heard").classList.remove("on");show("s1");};
+setLang(LANG);contactForm();askLoc();
+if(!getContacts().length){show("s0");}else{show("s1");}
+})();
+</script>
+</body>
+</html>

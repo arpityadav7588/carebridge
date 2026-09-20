@@ -1,0 +1,60 @@
+[
+  {
+    "id": "BB001",
+    "name": "Indian Red Cross Blood Bank Delhi",
+    "name_hi": "इंडियन रेड क्रॉस ब्लड बैंक दिल्ली",
+    "type": "blood_bank",
+    "address": "1 Red Cross Rd, New Delhi, Delhi 110001",
+    "lat": 28.6400,
+    "lng": 77.2140,
+    "phone": "011-23716441",
+    "available_groups": ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
+    "open_24h": true,
+    "city": "Delhi",
+    "state": "Delhi"
+  },
+  {
+    "id": "BB002",
+    "name": "Rotary Blood Bank Mumbai",
+    "name_hi": "रोटरी ब्लड बैंक मुंबई",
+    "type": "blood_bank",
+    "address": "Tardeo Rd, Mumbai, Maharashtra 400034",
+    "lat": 18.9712,
+    "lng": 72.8136,
+    "phone": "022-23520151",
+    "available_groups": ["A+", "B+", "O+", "AB+"],
+    "open_24h": false,
+    "hours": "08:00–20:00",
+    "city": "Mumbai",
+    "state": "Maharashtra"
+  },
+  {
+    "id": "BB003",
+    "name": "SIMS Hospital Blood Bank Chennai",
+    "name_hi": "SIMS ब्लड बैंक चेन्नई",
+    "type": "blood_bank",
+    "address": "No.1, Jawaharlal Nehru Salai, Vadapalani, Chennai 600026",
+    "lat": 13.0524,
+    "lng": 80.2120,
+    "phone": "044-49008000",
+    "available_groups": ["A+", "A-", "B+", "O+", "O-", "AB+"],
+    "open_24h": true,
+    "city": "Chennai",
+    "state": "Tamil Nadu"
+  },
+  {
+    "id": "BB004",
+    "name": "Sankalp India Foundation Blood Bank Bengaluru",
+    "name_hi": "संकल्प इंडिया फाउंडेशन ब्लड बैंक बेंगलुरु",
+    "type": "blood_bank",
+    "address": "16/1, Sadashivanagar, Bengaluru, Karnataka 560080",
+    "lat": 13.0020,
+    "lng": 77.5760,
+    "phone": "080-23491818",
+    "available_groups": ["A+", "B+", "O+", "O-", "AB+"],
+    "open_24h": false,
+    "hours": "09:00–17:00",
+    "city": "Bangalore",
+    "state": "Karnataka"
+  }
+]

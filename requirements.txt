@@ -1,0 +1,38 @@
+# CareBridge — Python Dependencies
+# =================================
+# Install: pip install -r requirements.txt
+
+# ── Core web framework ────────────────────────────────────────────────────
+streamlit>=1.35.0
+
+# ── Map rendering ─────────────────────────────────────────────────────────
+folium>=0.16.0
+streamlit-folium>=0.20.0
+
+# ── HTTP client (Overpass/OSM live fallback) ──────────────────────────────
+requests>=2.31.0
+
+# ── SMS / WhatsApp SOS fallback ───────────────────────────────────────────
+twilio>=8.0.0
+
+# ── Environment variables ─────────────────────────────────────────────────
+python-dotenv>=1.0.0
+
+# ── Testing ───────────────────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-cov>=4.1.0
+
+# ── Optional: Google Speech-to-Text (Indic ASR) ───────────────────────────
+# google-cloud-speech>=2.25.0
+
+# ── Optional: Text-to-speech (Indic TTS) ─────────────────────────────────
+# google-cloud-texttospeech>=2.16.0
+
+# ── Optional: LLM (guardrail runs BEFORE this — S2+) ─────────────────────
+# google-generativeai>=0.5.0
+# openai>=1.30.0
+
+# ── Optional: PostGIS geo-matching (S4) ───────────────────────────────────
+# psycopg2-binary>=2.9.9
+# SQLAlchemy>=2.0.0
+# GeoAlchemy2>=0.14.0

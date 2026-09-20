@@ -1,0 +1,57 @@
+# Dependencies
+/node_modules
+/package-lock.json
+/yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE and editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+/dist
+/build
+/out
+
+# Temporary files
+*.tmp
+*.temp
+*/tmp/*
+*/temp/*
+
+# Backup files
+*~
+*.bak
+*.swp
+
+# Miscellaneous
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Custom app files to ignore
+*.json.backup
+health-data-*.json
